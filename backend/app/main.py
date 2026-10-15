@@ -113,6 +113,29 @@ def _send_email_notification(
     subject: str,
     body: str,
 ) -> None:
+    brevo_api_key = os.getenv("BREVO_API_KEY", "").strip()
+    if brevo_api_key:
+        sender = os.getenv("BREVO_FROM_EMAIL", "").strip()
+        if not sender:
+            raise ValueError("Set BREVO_FROM_EMAIL when BREVO_API_KEY is configured")
+        response = httpx.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={
+                "accept": "application/json",
+                "api-key": brevo_api_key,
+                "content-type": "application/json",
+            },
+            json={
+                "sender": {"email": sender},
+                "to": [{"email": recipient}],
+                "subject": subject,
+                "textContent": body,
+            },
+            timeout=15,
+        )
+        response.raise_for_status()
+        return
+
     resend_api_key = os.getenv("RESEND_API_KEY", "").strip()
     if resend_api_key:
         sender = os.getenv("RESEND_FROM_EMAIL", "").strip()

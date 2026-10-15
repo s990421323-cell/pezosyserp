@@ -80,6 +80,13 @@ If your SMTP provider allows unauthenticated relaying, leave `SMTP_USER` and
 If email delivery fails, the account/approval status is still saved and the
 page reports that the notification was not sent.
 
+For Render deployments, Brevo can send notifications through HTTPS without
+requiring SMTP access. Verify the sender email in Brevo, then configure
+`BREVO_API_KEY` and `BREVO_FROM_EMAIL` in the deployment environment. The
+application sends each notification to the relevant registered user or
+administrator address. `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are also
+supported as a fallback provider.
+
 Admin registration is currently public, as requested. Anyone who can reach
 the signup page can create an administrator account. Restrict admin signup
 before deploying this site or exposing it to the internet.
