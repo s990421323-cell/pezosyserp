@@ -113,6 +113,33 @@ def _send_email_notification(
     subject: str,
     body: str,
 ) -> None:
+    mailjet_api_key = os.getenv("MAILJET_API_KEY", "").strip()
+    mailjet_api_secret = os.getenv("MAILJET_API_SECRET", "").strip()
+    if mailjet_api_key or mailjet_api_secret:
+        sender = os.getenv("MAILJET_FROM_EMAIL", "").strip()
+        if not mailjet_api_key or not mailjet_api_secret or not sender:
+            raise ValueError(
+                "Set MAILJET_API_KEY, MAILJET_API_SECRET, and MAILJET_FROM_EMAIL together"
+            )
+        response = httpx.post(
+            "https://api.mailjet.com/v3.1/send",
+            auth=(mailjet_api_key, mailjet_api_secret),
+            headers={"Content-Type": "application/json"},
+            json={
+                "Messages": [
+                    {
+                        "From": {"Email": sender},
+                        "To": [{"Email": recipient}],
+                        "Subject": subject,
+                        "TextPart": body,
+                    }
+                ]
+            },
+            timeout=15,
+        )
+        response.raise_for_status()
+        return
+
     brevo_api_key = os.getenv("BREVO_API_KEY", "").strip()
     if brevo_api_key:
         sender = os.getenv("BREVO_FROM_EMAIL", "").strip()

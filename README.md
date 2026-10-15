@@ -87,6 +87,11 @@ application sends each notification to the relevant registered user or
 administrator address. `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are also
 supported as a fallback provider.
 
+Mailjet is also supported for Render deployments through its HTTPS API. Verify
+the sender email in Mailjet, then configure `MAILJET_API_KEY`,
+`MAILJET_API_SECRET`, and `MAILJET_FROM_EMAIL`. When configured, Mailjet takes
+priority over the other email providers.
+
 Admin registration is currently public, as requested. Anyone who can reach
 the signup page can create an administrator account. Restrict admin signup
 before deploying this site or exposing it to the internet.
