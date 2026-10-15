@@ -12,6 +12,7 @@ from email.message import EmailMessage
 from pathlib import Path
 from typing import Literal
 
+import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -112,6 +113,28 @@ def _send_email_notification(
     subject: str,
     body: str,
 ) -> None:
+    resend_api_key = os.getenv("RESEND_API_KEY", "").strip()
+    if resend_api_key:
+        sender = os.getenv("RESEND_FROM_EMAIL", "").strip()
+        if not sender:
+            raise ValueError("Set RESEND_FROM_EMAIL when RESEND_API_KEY is configured")
+        response = httpx.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {resend_api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": sender,
+                "to": [recipient],
+                "subject": subject,
+                "text": body,
+            },
+            timeout=15,
+        )
+        response.raise_for_status()
+        return
+
     host = os.getenv("SMTP_HOST", "").strip()
     sender = os.getenv("SMTP_FROM_EMAIL", "").strip()
     username = os.getenv("SMTP_USER", "").strip()
@@ -150,7 +173,7 @@ def _try_send_email_notification(
         if not recipient:
             raise ValueError("Notification recipient is not configured")
         _send_email_notification(recipient, subject, body)
-    except (OSError, smtplib.SMTPException, ValueError) as error:
+    except (OSError, httpx.HTTPError, smtplib.SMTPException, ValueError) as error:
         logger.exception(
             "%s email notification failed (%s)",
             notification_name,
