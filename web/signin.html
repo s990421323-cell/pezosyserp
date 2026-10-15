@@ -92,6 +92,9 @@
             message,
             result.notificationSent && result.adminNotificationSent ? "success" : "error",
           );
+          window.setTimeout(() => {
+            window.location.assign("/login.html");
+          }, 2500);
         } catch (error) {
           showNotice(error.message || "Could not connect to the server.", "error");
         } finally {
