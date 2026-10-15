@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#102a43">
+    <title>Admin Dashboard · Pezosys ERP</title>
+    <link rel="icon" type="image/png" href="/assets/pezosys-logo.png">
+    <link rel="stylesheet" href="/auth.css">
+    <style>
+      body.admin-page {
+        display: block;
+        min-height: 100vh;
+        padding: 0;
+        background: #f5f8fc;
+      }
+      .admin-header {
+        display: flex;
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 18px 24px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+      .admin-header .brand {
+        position: static;
+      }
+      .admin-account {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        color: #52677d;
+        font-size: 14px;
+      }
+      .admin-account strong {
+        color: #102a43;
+      }
+      .admin-button {
+        min-height: 38px;
+        padding: 0 14px;
+      }
+      .admin-layout {
+        display: grid;
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 12px 24px 48px;
+        grid-template-columns: 220px 1fr;
+        gap: 24px;
+      }
+      .admin-sidebar,
+      .admin-card,
+      .admin-section {
+        border: 1px solid #e1e9f2;
+        border-radius: 14px;
+        background: white;
+        box-shadow: 0 10px 30px #102a4308;
+      }
+      .admin-sidebar {
+        align-self: start;
+        padding: 18px;
+      }
+      .sidebar-label {
+        margin: 0 0 12px;
+        color: #8494a6;
+        font-size: 11px;
+        font-weight: 750;
+        letter-spacing: .12em;
+      }
+      .sidebar-link {
+        display: block;
+        padding: 11px 12px;
+        border-radius: 8px;
+        color: #52677d;
+        font-size: 14px;
+      }
+      .sidebar-link:hover,
+      .sidebar-link.active {
+        color: #1769e0;
+        background: #eef5ff;
+        text-decoration: none;
+      }
+      .admin-main {
+        min-width: 0;
+      }
+      .admin-welcome {
+        margin: 14px 0 24px;
+      }
+      .admin-welcome h1 {
+        margin-bottom: 8px;
+      }
+      .admin-welcome p {
+        margin: 0;
+        color: #52677d;
+      }
+      .admin-overview {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+      }
+      .admin-card {
+        min-height: 126px;
+        padding: 20px;
+      }
+      .admin-card-label {
+        display: block;
+        margin-bottom: 10px;
+        color: #8494a6;
+        font-size: 11px;
+        font-weight: 750;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+      }
+      .admin-card strong {
+        display: block;
+        margin-bottom: 6px;
+        color: #102a43;
+        font-size: 25px;
+      }
+      .admin-card span:last-child {
+        color: #52677d;
+        font-size: 13px;
+      }
+      .admin-section {
+        margin-top: 24px;
+        padding: 24px;
+      }
+      .section-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .section-heading h2 {
+        margin: 0 0 6px;
+        font-size: 22px;
+      }
+      .section-heading p {
+        margin: 0 0 18px;
+        color: #52677d;
+      }
+      .request-count {
+        color: #1769e0;
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .notice {
+        margin-top: 16px;
+      }
+      .request-list {
+        display: grid;
+        gap: 12px;
+      }
+      .request-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 16px;
+        border: 1px solid #e1e9f2;
+        border-radius: 10px;
+      }
+      .request-person {
+        display: grid;
+        gap: 5px;
+        min-width: 0;
+      }
+      .request-person span {
+        overflow-wrap: anywhere;
+        color: #52677d;
+        font-size: 13px;
+      }
+      .request-actions {
+        display: flex;
+        flex: none;
+        gap: 8px;
+      }
+      .request-actions button {
+        min-height: 38px;
+        padding: 0 14px;
+      }
+      .request-actions .reject {
+        color: #922b21;
+        background: #fff0ee;
+      }
+      .empty-state {
+        margin: 0;
+        color: #52677d;
+      }
+      @media (max-width: 760px) {
+        .admin-header,
+        .admin-layout {
+          padding-right: 16px;
+          padding-left: 16px;
+        }
+        .admin-header,
+        .admin-layout {
+          display: block;
+        }
+        .admin-account {
+          margin-top: 12px;
+          flex-wrap: wrap;
+        }
+        .admin-sidebar {
+          margin-bottom: 24px;
+        }
+        .admin-overview {
+          grid-template-columns: 1fr;
+        }
+        .request-card {
+          align-items: stretch;
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body class="admin-page">
+    <header class="admin-header">
+      <a class="brand" href="/" aria-label="Pezosys ERP home">
+        <img class="brand-logo" src="/assets/pezosys-logo.png" alt="Pezosys ERP">
+      </a>
+      <div class="admin-account">
+        <span>Signed in as <strong id="account-name">Administrator</strong></span>
+        <button id="logout-button" class="admin-button" type="button">Sign out</button>
+      </div>
+    </header>
+
+    <div class="admin-layout">
+      <aside class="admin-sidebar" aria-label="Administrator navigation">
+        <p class="sidebar-label">WORKSPACE</p>
+        <a class="sidebar-link active" href="/admin-dashboard.html">Dashboard</a>
+        <a class="sidebar-link" href="#employee-requests">Employee requests</a>
+        <a class="sidebar-link" href="#organization-registers">Organization registers</a>
+      </aside>
+
+      <main class="admin-main">
+        <section class="admin-welcome">
+          <p class="sidebar-label">ADMINISTRATOR WORKSPACE</p>
+          <h1>Good to have you here, <span id="welcome-name">Administrator</span>.</h1>
+          <p>Manage employee access and organization registers from your dashboard.</p>
+        </section>
+
+        <section class="admin-overview" aria-label="Administrator dashboard cards">
+          <article class="admin-card">
+            <span class="admin-card-label">Team access</span>
+            <strong id="pending-count">0</strong>
+            <span>Employee account requests</span>
+          </article>
+          <article class="admin-card">
+            <span class="admin-card-label">Account type</span>
+            <strong>Admin</strong>
+            <span>Full workspace access</span>
+          </article>
+          <article class="admin-card">
+            <span class="admin-card-label">Workspace</span>
+            <strong>Active</strong>
+            <span>Pezosys ERP administration</span>
+          </article>
+        </section>
+
+        <section id="employee-requests" class="admin-section">
+          <div class="section-heading">
+            <div>
+              <h2>Employee requests</h2>
+              <p>Review employees waiting for access.</p>
+            </div>
+            <span id="request-count" class="request-count">0 pending</span>
+          </div>
+          <p id="dashboard-notice" class="notice" role="status" aria-live="polite"></p>
+          <div id="request-list" class="request-list"></div>
+        </section>
+
+        <section id="organization-registers" class="admin-section">
+          <div class="section-heading">
+            <div>
+              <h2>Organization registers</h2>
+              <p>Register links can be added here when the admin workflow is ready.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const accountName = document.querySelector("#account-name");
+      const welcomeName = document.querySelector("#welcome-name");
+      const pendingCount = document.querySelector("#pending-count");
+      const requestCount = document.querySelector("#request-count");
+      const requestList = document.querySelector("#request-list");
+      const dashboardNotice = document.querySelector("#dashboard-notice");
+
+      loadDashboard();
+
+      document.querySelector("#logout-button").addEventListener("click", async () => {
+        try {
+          await request("/api/v1/auth/logout", { method: "POST" });
+          window.location.assign("/login.html");
+        } catch (error) {
+          showNotice(error.message, "error");
+        }
+      });
+
+      async function loadDashboard() {
+        try {
+          const profile = await request("/api/v1/auth/me");
+          if (profile.user.role !== "admin") {
+            window.location.assign("/login.html");
+            return;
+          }
+          accountName.textContent = profile.user.fullName;
+          welcomeName.textContent = profile.user.fullName;
+          await loadPendingEmployees();
+        } catch (error) {
+          if (error.status === 401 || error.status === 403) {
+            window.location.assign("/login.html");
+            return;
+          }
+          showNotice(error.message, "error");
+        }
+      }
+
+      async function loadPendingEmployees() {
+        const result = await request("/api/v1/admin/pending-employees");
+        const employees = result.employees;
+        pendingCount.textContent = employees.length;
+        requestCount.textContent = `${employees.length} pending`;
+        requestList.replaceChildren();
+        if (employees.length === 0) {
+          const emptyState = document.createElement("p");
+          emptyState.className = "empty-state";
+          emptyState.textContent = "There are no employee requests waiting for approval.";
+          requestList.append(emptyState);
+          return;
+        }
+        for (const employee of employees) {
+          const card = document.createElement("article");
+          card.className = "request-card";
+          const person = document.createElement("div");
+          person.className = "request-person";
+          const name = document.createElement("strong");
+          name.textContent = employee.fullName;
+          const details = document.createElement("span");
+          details.textContent =
+            `${employee.loginId} · ${employee.email}${employee.phoneNo ? ` · ${employee.phoneNo}` : ""}`;
+          person.append(name, details);
+          const actions = document.createElement("div");
+          actions.className = "request-actions";
+          actions.append(
+            approvalButton(employee.id, "approved", "Approve"),
+            approvalButton(employee.id, "rejected", "Reject", "reject"),
+          );
+          card.append(person, actions);
+          requestList.append(card);
+        }
+      }
+
+      function approvalButton(employeeId, status, label, className = "") {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = className;
+        button.textContent = label;
+        button.addEventListener("click", async () => {
+          button.disabled = true;
+          try {
+            await request(`/api/v1/admin/employees/${employeeId}/approval`, {
+              method: "PATCH",
+              body: { approvalStatus: status },
+            });
+            showNotice(`Employee ${status}.`, "success");
+            await loadPendingEmployees();
+          } catch (error) {
+            button.disabled = false;
+            showNotice(error.message, "error");
+          }
+        });
+        return button;
+      }
+
+      async function request(url, options = {}) {
+        const response = await fetch(url, {
+          method: options.method || "GET",
+          headers: options.body ? { "Content-Type": "application/json" } : {},
+          body: options.body ? JSON.stringify(options.body) : undefined,
+          credentials: "same-origin",
+        });
+        const result = response.status === 204 ? {} : await response.json();
+        if (!response.ok) {
+          const error = new Error(result.detail || "Request failed.");
+          error.status = response.status;
+          throw error;
+        }
+        return result;
+      }
+
+      function showNotice(message, type) {
+        dashboardNotice.textContent = message;
+        dashboardNotice.className = `notice visible ${type}`;
+      }
+    </script>
+  </body>
+</html>

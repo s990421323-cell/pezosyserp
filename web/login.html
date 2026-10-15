@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#102a43">
+    <title>Log in · Pezosys ERP</title>
+    <link rel="icon" type="image/png" href="/assets/pezosys-logo.png">
+    <link rel="stylesheet" href="/auth.css">
+  </head>
+  <body class="login-page">
+    <a class="brand" href="/" aria-label="Pezosys ERP home">
+      <img class="brand-logo" src="/assets/pezosys-logo.png" alt="Pezosys ERP">
+    </a>
+    <main class="panel login-panel">
+      <section id="login-section">
+        <h1>Welcome back</h1>
+        <p class="subtitle">Log in to your Pezosys ERP account.</p>
+        <p id="login-notice" class="notice" role="status" aria-live="polite"></p>
+        <form id="login-form">
+          <div class="field">
+            <label for="login-id">Login ID</label>
+            <input id="login-id" name="loginId" autocomplete="username" maxlength="80" required>
+          </div>
+          <div class="field">
+            <label for="role">Account type</label>
+            <select id="role" name="role" required>
+              <option value="employee">Employee</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" maxlength="128" required>
+          </div>
+          <button type="submit">Log in</button>
+        </form>
+        <p class="footer">New to Pezosys ERP? <a href="/signin.html">Create an account</a></p>
+      </section>
+      <section id="profile-section" class="profile">
+        <h1>Your profile</h1>
+        <p id="profile-intro" class="subtitle"></p>
+        <p id="profile-notice" class="notice" role="status" aria-live="polite"></p>
+        <form id="profile-form">
+          <div class="field">
+            <label for="profile-login-id">Login ID</label>
+            <input id="profile-login-id" name="loginId" readonly>
+          </div>
+          <div class="field">
+            <label for="profile-role">Account type</label>
+            <input id="profile-role" name="role" readonly>
+          </div>
+          <div class="field">
+            <label for="profile-full-name">Full name</label>
+            <input id="profile-full-name" name="fullName" autocomplete="name" maxlength="160" required>
+          </div>
+          <div class="field">
+            <label for="profile-email">Email</label>
+            <input id="profile-email" name="email" type="email" autocomplete="email" maxlength="254" required>
+          </div>
+          <div class="field">
+            <label for="profile-phone-no">Phone number</label>
+            <input id="profile-phone-no" name="phoneNo" type="tel" autocomplete="tel" maxlength="20">
+          </div>
+          <button type="submit">Save profile</button>
+          <button id="logout-button" type="button">Log out</button>
+        </form>
+        <section id="pending-section" class="pending-section" hidden>
+          <h2>Employee approval requests</h2>
+          <p class="subtitle">Review employees waiting for access.</p>
+          <p id="pending-notice" class="notice" role="status" aria-live="polite"></p>
+          <div id="pending-list"></div>
+        </section>
+      </section>
+    </main>
+    <script>
+      const loginSection = document.querySelector("#login-section");
+      const profileSection = document.querySelector("#profile-section");
+      const loginForm = document.querySelector("#login-form");
+      const profileForm = document.querySelector("#profile-form");
+      const loginNotice = document.querySelector("#login-notice");
+      const profileNotice = document.querySelector("#profile-notice");
+      const pendingSection = document.querySelector("#pending-section");
+      const pendingNotice = document.querySelector("#pending-notice");
+      const pendingList = document.querySelector("#pending-list");
+      const loginButton = loginForm.querySelector("button");
+      const profileButton = profileForm.querySelector('button[type="submit"]');
+
+      loginForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const values = new FormData(loginForm);
+        loginButton.disabled = true;
+        try {
+          const result = await request("/api/v1/auth/login", {
+            method: "POST",
+            body: {
+              loginId: values.get("loginId"),
+              role: values.get("role"),
+              password: values.get("password"),
+            },
+          });
+          if (result.user.role === "admin") {
+            window.location.assign("/admin-dashboard.html");
+            return;
+          }
+          await loadProfile();
+          showNotice(
+            profileNotice,
+            result.message,
+            result.notificationSent ? "success" : "error",
+          );
+        } catch (error) {
+          showNotice(loginNotice, error.message, "error");
+        } finally {
+          loginButton.disabled = false;
+        }
+      });
+
+      profileForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const values = new FormData(profileForm);
+        profileButton.disabled = true;
+        try {
+          const result = await request("/api/v1/auth/me", {
+            method: "PATCH",
+            body: {
+              fullName: values.get("fullName"),
+              email: values.get("email"),
+              phoneNo: values.get("phoneNo") || null,
+            },
+          });
+          fillProfile(result.user);
+          showNotice(profileNotice, "Profile saved.", "success");
+        } catch (error) {
+          showNotice(profileNotice, error.message, "error");
+        } finally {
+          profileButton.disabled = false;
+        }
+      });
+
+      document.querySelector("#logout-button").addEventListener("click", async () => {
+        try {
+          await request("/api/v1/auth/logout", { method: "POST" });
+          profileSection.classList.remove("visible");
+          loginSection.hidden = false;
+          loginForm.reset();
+          showNotice(loginNotice, "You have logged out.", "success");
+        } catch (error) {
+          showNotice(profileNotice, error.message, "error");
+        }
+      });
+
+      async function request(url, options = {}) {
+        const response = await fetch(url, {
+          method: options.method || "GET",
+          headers: options.body ? { "Content-Type": "application/json" } : {},
+          body: options.body ? JSON.stringify(options.body) : undefined,
+          credentials: "same-origin",
+        });
+        if (response.status === 204) return {};
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || "Request failed.");
+        return result;
+      }
+
+      async function loadProfile() {
+        const result = await request("/api/v1/auth/me");
+        loginSection.hidden = true;
+        profileSection.classList.add("visible");
+        fillProfile(result.user);
+        if (result.user.role === "admin") {
+          pendingSection.hidden = false;
+          await loadPendingEmployees();
+        }
+      }
+
+      function fillProfile(user) {
+        document.querySelector("#profile-intro").textContent =
+          `${user.fullName} · ${user.approvalStatus}`;
+        document.querySelector("#profile-login-id").value = user.loginId;
+        document.querySelector("#profile-role").value = user.role;
+        document.querySelector("#profile-full-name").value = user.fullName;
+        document.querySelector("#profile-email").value = user.email;
+        document.querySelector("#profile-phone-no").value = user.phoneNo || "";
+      }
+
+      async function loadPendingEmployees() {
+        try {
+          const result = await request("/api/v1/admin/pending-employees");
+          pendingList.replaceChildren();
+          if (result.employees.length === 0) {
+            pendingList.textContent = "There are no employees waiting for approval.";
+            return;
+          }
+          for (const employee of result.employees) {
+            const card = document.createElement("article");
+            card.className = "pending-card";
+            const details = document.createElement("p");
+            details.textContent =
+              `${employee.fullName} · ${employee.email} · Login ID: ${employee.loginId}`;
+            const actions = document.createElement("div");
+            actions.className = "pending-actions";
+            for (const status of ["approved", "rejected"]) {
+              const button = document.createElement("button");
+              button.type = "button";
+              button.textContent = status === "approved" ? "Approve" : "Reject";
+              button.classList.toggle("secondary", status === "rejected");
+              button.addEventListener("click", () =>
+                decideApproval(employee.id, status),
+              );
+              actions.append(button);
+            }
+            card.append(details, actions);
+            pendingList.append(card);
+          }
+        } catch (error) {
+          showNotice(pendingNotice, error.message, "error");
+        }
+      }
+
+      async function decideApproval(employeeId, approvalStatus) {
+        try {
+          const result = await request(
+            `/api/v1/admin/employees/${employeeId}/approval`,
+            { method: "PATCH", body: { approvalStatus } },
+          );
+          showNotice(
+            pendingNotice,
+            result.message,
+            result.notificationSent ? "success" : "error",
+          );
+          await loadPendingEmployees();
+        } catch (error) {
+          showNotice(pendingNotice, error.message, "error");
+        }
+      }
+
+      function showNotice(element, message, type) {
+        element.textContent = message;
+        element.className = `notice visible ${type}`;
+      }
+
+      loadProfile().catch((error) => {
+        if (!error.message.includes("Please sign in")) {
+          showNotice(loginNotice, error.message, "error");
+        }
+      });
+    </script>
+  </body>
+</html>

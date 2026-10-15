@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#102a43">
+    <title>Create account · Pezosys ERP</title>
+    <link rel="icon" type="image/png" href="/assets/pezosys-logo.png">
+    <link rel="stylesheet" href="/auth.css">
+  </head>
+  <body class="signup-page">
+    <a class="brand" href="/" aria-label="Pezosys ERP home"><img class="brand-logo" src="/assets/pezosys-logo.png" alt="Pezosys ERP"></a>
+    <main class="panel">
+      <h1>Create your account</h1>
+      <p class="subtitle">Register an administrator or employee account.</p>
+      <p id="notice" class="notice" role="status" aria-live="polite"></p>
+      <form id="signup-form">
+        <div class="grid">
+          <div class="field">
+            <label for="full-name">Full name</label>
+            <input id="full-name" name="fullName" autocomplete="name" maxlength="160" required>
+          </div>
+          <div class="field">
+            <label for="login-id">Login ID</label>
+            <input id="login-id" name="loginId" autocomplete="username" maxlength="80" required>
+          </div>
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" autocomplete="email" maxlength="254" required>
+        </div>
+        <div class="grid">
+          <div class="field">
+            <label for="phone-no">Phone number <span>(optional)</span></label>
+            <input id="phone-no" name="phoneNo" type="tel" autocomplete="tel" maxlength="20">
+          </div>
+          <div class="field">
+            <label for="role">Account type</label>
+            <select id="role" name="role" required>
+              <option value="employee">Employee</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
+        </div>
+        <div class="field">
+          <label for="confirm-password">Confirm password</label>
+          <input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
+        </div>
+        <button type="submit">Create account</button>
+      </form>
+      <p class="footer">Already registered? <a href="/login.html">Log in</a></p>
+    </main>
+    <script>
+      const form = document.querySelector("#signup-form");
+      const notice = document.querySelector("#notice");
+      const button = form.querySelector("button");
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const values = new FormData(form);
+        const password = values.get("password");
+        if (password !== values.get("confirmPassword")) {
+          showNotice("Passwords do not match.", "error");
+          return;
+        }
+
+        button.disabled = true;
+        try {
+          const response = await fetch("/api/v1/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              fullName: values.get("fullName"),
+              loginId: values.get("loginId"),
+              email: values.get("email"),
+              phoneNo: values.get("phoneNo") || null,
+              role: values.get("role"),
+              password,
+            }),
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.detail || "Account creation failed.");
+          form.hidden = true;
+          const message = result.adminNotificationSent
+            ? result.message
+            : `${result.message} The administrator signup alert could not be sent; notify the administrator manually.`;
+          showNotice(
+            message,
+            result.notificationSent && result.adminNotificationSent ? "success" : "error",
+          );
+        } catch (error) {
+          showNotice(error.message || "Could not connect to the server.", "error");
+        } finally {
+          button.disabled = false;
+        }
+      });
+
+      function showNotice(message, type) {
+        notice.textContent = message;
+        notice.className = `notice visible ${type}`;
+      }
+    </script>
+  </body>
+</html>
