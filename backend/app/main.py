@@ -229,6 +229,13 @@ def _try_send_email_notification(
             notification_name,
             type(error).__name__,
         )
+        if isinstance(error, httpx.HTTPStatusError):
+            logger.error(
+                "%s email provider response: status=%s body=%s",
+                notification_name,
+                error.response.status_code,
+                error.response.text[:500],
+            )
         return False
     logger.info("%s email notification sent to %s", notification_name, recipient)
     return True
